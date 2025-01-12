@@ -2,13 +2,29 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const mongoose = require('mongoose');
-const Listings = require('./models/listing.js');
 const exp = require('constants');
 const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
-const wrapAsync = require('./utils/WrapAsync.js');
 const ExpressError = require('./utils/ExpressError.js');
-const listingSchema = require('./schema.js');
+const session = require('express-session');
+const flash = require('connect-flash');
+const passport = require('passport');
+const localStrategy = require('passport-local');
+const User = require('./models/user.js');
+
+const listings = require('./routes/listing.js');
+const reviews = require('./routes/review.js');
+
+const sessionOption = {
+    secret: "mysecretkey",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true
+    }
+};
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -18,6 +34,16 @@ app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, 'public')))
 
+
+app.use(session(sessionOption));
+app.use(flash());
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new localStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 main().then(()=>{
     console.log("Connected to database");
 }).catch(()=>{
@@ -25,70 +51,27 @@ main().then(()=>{
 })
 
 
-const validateSchema = (req, res, next)=>{
-    let {error} =  listingSchema.validate(req.body);
-    if(error){
-        throw new ExpressError(400, error);
-    }else{
-        next();
-    }
-}
-
 app.get('/', (req, res)=>{
     res.send("Hi i am root");
 })
 
-// index route start here
-app.get('/listings', wrapAsync(async (req, res)=>{
-    const listings = await Listings.find();
-    // console.log(listings);
-    res.render('./listings/index.ejs', {listings})
-}))
-
-// new route
-app.get('/listings/new', (req, res)=>{
-    res.render('./listings/create.ejs');
+app.get('/demouser', async(req, res)=>{
+    let fakeUser = new User({
+        email: "saymislam365@gmail.com",
+        username: "saymislamjihad"
+    })
+    let registeredUser =   await User.register(fakeUser, "andajedepassword");
+    res.send(registeredUser)
 })
 
-// show route
-app.get('/listings/:id', wrapAsync(async (req, res)=>{
-    let {id} = req.params;
-    const listing = await Listings.findById(id);
-    res.render('./listings/show.ejs', {listing});
-}))
+app.use((req, res, next)=>{
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    next();
+})
 
-// create route
-app.post('/listings',validateSchema, wrapAsync(async (req, res)=>{
-    // let result = listingSchema.validate(req.body);
-    // // console.log(result);
-    // if(result.error){
-    //     throw new ExpressError(400, result.error);
-    // }
-    const newListing = new Listings(req.body.listing);
-    await newListing.save();
-    res.redirect('/listings');
-}))
-
-// edit route
-app.get('/listing/:id/edit', wrapAsync(async (req, res)=>{
-    let {id} = req.params;
-    const listing = await Listings.findById(id);
-    res.render('./listings/edit.ejs', {listing});
-}))
-
-app.put('/listings/:id', validateSchema, wrapAsync(async (req, res)=>{
-    let {id} = req.params;
-    await Listings.findByIdAndUpdate(id, {...req.body.listing});
-    res.redirect(`/listings/${id}`);
-}))
-
-// delete route
-app.delete('/listings/:id', wrapAsync(async (req, res)=>{
-    let {id} = req.params;
-    let deletedValue = await Listings.findByIdAndDelete(id);
-    console.log(deletedValue);
-    res.redirect("/listings")
-}));
+app.use('/listings', listings)
+app.use('/listings/:id/reviews', reviews)
 
 async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');

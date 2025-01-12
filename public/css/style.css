@@ -90,3 +90,11 @@ body{
 .show-img{
     height: 30vh;
 }
+
+.sldkjfsd{
+    border: 2px solid tomato !important;
+    border-radius: 20px;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
