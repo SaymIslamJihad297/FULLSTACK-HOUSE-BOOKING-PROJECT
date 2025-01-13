@@ -12,8 +12,9 @@ const passport = require('passport');
 const localStrategy = require('passport-local');
 const User = require('./models/user.js');
 
-const listings = require('./routes/listing.js');
-const reviews = require('./routes/review.js');
+const listingsRouter = require('./routes/listing.js');
+const reviewsRouter = require('./routes/review.js');
+const userRouter = require('./routes/user.js');
 
 const sessionOption = {
     secret: "mysecretkey",
@@ -55,23 +56,26 @@ app.get('/', (req, res)=>{
     res.send("Hi i am root");
 })
 
-app.get('/demouser', async(req, res)=>{
-    let fakeUser = new User({
-        email: "saymislam365@gmail.com",
-        username: "saymislamjihad"
-    })
-    let registeredUser =   await User.register(fakeUser, "andajedepassword");
-    res.send(registeredUser)
-})
+// app.get('/demouser', async(req, res)=>{
+//     let fakeUser = new User({
+//         email: "saymislam365@gmail.com",
+//         username: "saymislamjihad"
+//     })
+//     let registeredUser =   await User.register(fakeUser, "andajedepassword");
+//     res.send(registeredUser)
+// })
 
 app.use((req, res, next)=>{
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
+    res.locals.loggedIn = req.isAuthenticated();
     next();
 })
 
-app.use('/listings', listings)
-app.use('/listings/:id/reviews', reviews)
+app.use('/listings', listingsRouter);
+app.use('/listings/:id/reviews', reviewsRouter);
+app.use('/', userRouter);
+
 
 async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
