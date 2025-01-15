@@ -4,10 +4,12 @@ const { listingSchema, reviewSchema } = require('../schema.js');
 const ExpressError = require('../utils/ExpressError.js');
 const wrapAsync = require('../utils/WrapAsync.js');
 const Listings = require('../models/listing.js');
-const {isLoggedIn} = require('../middleware.js');
+const { isLoggedIn } = require('../middleware.js');
 const user = require('../models/user.js');
-const {isOwner} = require('../middleware.js');
+const { isOwner } = require('../middleware.js');
 const listingController = require('../controllers/listings.js');
+const multer  = require('multer')
+const upload = multer({ dest: 'uploads/' })
 
 const validateSchema = (req, res, next) => {
     let { error } = listingSchema.validate(req.body);
@@ -17,25 +19,24 @@ const validateSchema = (req, res, next) => {
         next();
     }
 }
-// index route start here
-router.get('/', wrapAsync(listingController.index));
+
+router.route("/")
+    .get(wrapAsync(listingController.index))
+    // .post(validateSchema, wrapAsync(listingController.createNewListing));
+    .post(upload.single('listing[image]'), (req, res, next)=> {
+        res.send(req.file);
+      })
 
 // new route
 router.get('/new', isLoggedIn, listingController.renderNewRoute);
 
-// show route
-router.get('/:id', wrapAsync(listingController.showDetails));
+router.route('/:id')
+    .get(wrapAsync(listingController.showDetails))
+    .put(isOwner, validateSchema, wrapAsync(listingController.updateRoute))
+    .delete(isLoggedIn, isOwner, wrapAsync(listingController.deleteRoute));
 
-// create route
-router.post('/', validateSchema, wrapAsync(listingController.createNewListing));
 
 // edit route
 router.get('/:id/edit', isLoggedIn, isOwner, wrapAsync(listingController.editListing));
-
-router.put('/:id', isOwner,validateSchema, wrapAsync(listingController.updateRoute));
-
-// delete route
-router.delete('/:id',isLoggedIn, isOwner, wrapAsync(listingController.deleteRoute));
-
 
 module.exports = router;
