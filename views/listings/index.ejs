@@ -1,22 +1,107 @@
 <% layout('/layouts/boilerplate') %>
 
 
-        <h3>All Listings</h3>
-        <!-- <form action="/listings/new">
+    <!-- <h3>All Listings</h3> -->
+    <!-- <form action="/listings/new">
         <button>Create new Post</button>
     </form> -->
+    <style>
+        #filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-around;
+            margin-bottom: 5px;
+        }
 
-        <div class="listings-container row row-cols-lg-4 row-cols-md-2 row-cols-sm-1">
-            <% for(listing of listings){ %>
-                <a href="/listings/<%= listing._id %>">
+        .filter {
+            text-align: center;
+            margin-right: 2rem;
+            margin-top: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .filter:hover {
+            opacity: 1;
+            cursor: pointer;
+            scale: 1.1;
+        }
+
+        .filter p {
+            font-size: 0.8rem;
+        }
+
+        .tax-info {
+            display: none;
+        }
+        .tax-toggle{
+            border: 2px solid black;
+            border-radius: 10px;
+            height: 3.5rem;
+            padding: 1rem;
+        }
+    </style>
+    <div id="filters">
+        <div class="filter">
+            <div><i class="fa-solid fa-fire"></i></div>
+            <p>Trending</p>
+        </div>
+        <div class="filter">
+            <div><i class="fa-solid fa-bed"></i></div>
+            <p>Rooms</p>
+        </div>
+        <div class="filter">
+            <div><i class="fa-solid fa-earth-americas"></i></div>
+            <p>Country Side</p>
+        </div>
+        <div class="filter">
+            <div><i class="fa-solid fa-mountain-city"></i></div>
+            <p>Mountain city</p>
+        </div>
+        <div class="filter">
+            <div><i class="fa-solid fa-face-smile-beam"></i></div>
+            <p>Scating place</p>
+        </div>
+        <div class="filter">
+            <div><i class="fa-solid fa-chess-rook"></i></div>
+            <p>Castles</p>
+        </div>
+        <div class="tax-toggle">
+            <div class="form-check-reverse form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">
+                <label class="form-check-label" for="flexSwitchCheckDefault">Display total after taxes</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="listings-container row row-cols-lg-4 row-cols-md-2 row-cols-sm-1">
+        <% for(listing of listings){ %>
+            <a href="/listings/<%= listing._id %>">
                 <div class="card" style="width: 20rem">
                     <img src="<%= listing.image %>" class="card-img-top" alt="Home img" style="height: 20rem">
                     <div class="card-img-overlay"></div>
                     <div class="card-body">
-                        <h4 class="card-text"><%= listing.title %></h4>
+                        <h4 class="card-text">
+                            <%= listing.title %>
+                        </h4>
                         <h4>&#2547; <%= listing.price.toLocaleString("en-BD") %> /night</h4>
+                        <h5 class="tax-info">+18% GST</h5>
                     </div>
                 </div>
             </a>
-                <% } %>
-        </div>
+            <% } %>
+    </div>
+
+    <script>
+        let taxSwitch = document.getElementById("flexSwitchCheckDefault");
+        taxSwitch.addEventListener("click", () => {
+            let taxInfo = document.getElementsByClassName("tax-info");
+            for (info of taxInfo) {
+                if (info.style.display != "block") {
+                    info.style.display = "block";
+                }else{
+                    info.style.display = "none";
+                }
+            }
+        })
+    </script>

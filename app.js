@@ -1,3 +1,7 @@
+if(process.env.NODE_ENV != "production"){
+    require('dotenv').config();
+}
+
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -7,6 +11,7 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const ExpressError = require('./utils/ExpressError.js');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require('passport');
 const localStrategy = require('passport-local');
@@ -16,8 +21,35 @@ const listingsRouter = require('./routes/listing.js');
 const reviewsRouter = require('./routes/review.js');
 const userRouter = require('./routes/user.js');
 
+const dbUrl = process.env.ATLASDB_URL;
+const secretKey = process.env.SECRET_KEY;
+
+main().then(()=>{
+    console.log("Connected to database");
+}).catch((err)=>{
+    console.dir(err);
+})
+
+async function main() {
+    await mongoose.connect(dbUrl);
+}
+
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+        secret: secretKey,
+    },
+    touchAfter: 24*3600,
+});
+
+store.on("error", ()=>{
+    console.log("Error in mongo session store", err);
+    
+})
+
 const sessionOption = {
-    secret: "mysecretkey",
+    store,
+    secret: secretKey,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -35,7 +67,6 @@ app.use(methodOverride('_method'));
 app.engine('ejs', ejsMate);
 app.use(express.static(path.join(__dirname, 'public')))
 
-
 app.use(session(sessionOption));
 app.use(flash());
 
@@ -45,15 +76,8 @@ passport.use(new localStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-main().then(()=>{
-    console.log("Connected to database");
-}).catch(()=>{
-    console.log("Error");
-})
-
-
 app.get('/', (req, res)=>{
-    res.send("Hi i am root");
+    res.redirect('/listings');
 })
 
 // app.get('/demouser', async(req, res)=>{
@@ -76,11 +100,6 @@ app.use((req, res, next)=>{
 app.use('/listings', listingsRouter);
 app.use('/listings/:id/reviews', reviewsRouter);
 app.use('/', userRouter);
-
-
-async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
-}
 
 
 app.all("*", (req, res, next)=>{
